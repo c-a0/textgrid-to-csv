@@ -19,7 +19,6 @@ def main(filename): #Called from "__main__" at the very bottom.
     except UnicodeError: #If the file is in ASCII and we try to read it as Unicode, it won't work, so we catch this error.
         f = open(filename, 'r')   
         lines = [line.rstrip() for line in f]
-
     f.close()
 
     #Define a new data type, "interval"                                                             int     float   float   string
@@ -64,9 +63,9 @@ def main(filename): #Called from "__main__" at the very bottom.
         
 
 
+    ### Routine for outputting the TextGrid data to csv format ###
     createNew = open(filename+".csv", "a") #Create a [filename].csv file, just in case it doesn't exist already.
     createNew.close()
-
     with open(filename+".csv", 'r+') as f2: 
         f2.truncate()
         f2.write("Syllable,Metric Absolute,Micro Absolute,Metric Measure,Beat Strength,Accent,Zone")
@@ -142,8 +141,7 @@ def main(filename): #Called from "__main__" at the very bottom.
 
 
 if __name__ == "__main__":
-    for root, dirs, files in os.walk(".", topdown=True):
+    for root, dirs, files in os.walk(".", topdown=True): #Run the script on each file in the directory
         for file in files:
-            if(file.endswith(".TextGrid")):
+            if(file.endswith(".TextGrid")): #Only run the script on files that end in .TextGrid
                 main(file)
-
