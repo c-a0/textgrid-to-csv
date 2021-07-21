@@ -81,10 +81,10 @@ def main(filename): #Called from "__main__" at the very bottom.
             if(inter.text != ""): #Each interval should be a syllable. If there's no text in it, we can just skip it.
                 f2.write('\n')
                 
-                #Syllable
+                #Syllable: The syllable text
                 f2.write(inter.text+",")
                 
-                #Metric Absolute
+                #Metric Absolute: How many beats into the song the syllable is
                 for absolute in tiers[6]: #Tier 5 (e.g. tiers[6]) is the one with the unmodified metric data. We need to use that to get a count of which (absolute) beat we're on.
                     if inter.xmin == absolute.xmin: #We look through every interval in Tier 5 until we find one that has the same xmin as our current syllable.
                         metricCounter = absolute.number-1 #Set metricCounter to the interval number of the Tier 5 interval that corresponds to our current syllable. metricCounter is the number that will be printed to the "Metric Absolute" column in our spreadsheet.
@@ -96,7 +96,7 @@ def main(filename): #Called from "__main__" at the very bottom.
                 f2.write(str(metricCounter)+",") 
                 
                 x = 0
-                #Micro Absolute
+                #Micro Absolute: The starting time for the syllable's microtiming interval
                 while(x < len(tiers[8])): #Look through the whole microtiming tier to find the microtiming interval that matches the metric interval.
                     if(inter.xmin >= tiers[8][x].xmin and inter.xmin <= tiers[8][x].xmax and inter.text == tiers[8][x].text): #If metric interval's xmin falls BETWEEN any microtiming interval's xmin and xmax, AND the text for both intervals matches, use that microtiming interval.
                         microText = str(tiers[8][x].xmin)+","
@@ -109,7 +109,7 @@ def main(filename): #Called from "__main__" at the very bottom.
                     x += 1
                 f2.write(microText)
                 
-                #Metric Measure - this won't work for songs that are not in 4/4!!!
+                #Metric Measure: Formatted as X.Y, where X is which measure of the song the syllable is in, Y is which beat of that measure the syllable is on
                 if(metricCounter%4 == 0): #We % (modulo) the current syllable's metric number by 4, to figure out which of the four beats it lands on. 1, 2, and 3 will show up correctly, but 4 shows up as 0, so we need to create a special exception for that.
                     f2.write(str(measureCounter)+"."+str(4)+",") #Change any 0s to 4s.
                 else:
@@ -127,10 +127,10 @@ def main(filename): #Called from "__main__" at the very bottom.
                         beatStrength = "1,"
                 f2.write(beatStrength)
                 
-                #Accent
+                #Accent: Does the syllable have a strong accent (X), a weak accent (x), or no accent (not marked)?
                 f2.write(tiers[9][i].text+",") 
                 
-                #Zone
+                #Zone: Which zone the syllable is in
                 for zone in tiers[10]: #Loop through Tier 9 intervals
                     if inter.xmin < zone.xmax: #Check if the xmin of the current syllable is less than the xmax of a Zone in Tier 9
                         curZone = zone.text #If the xmin of the current syllable falls within a zone, make curZone that zone's text, then end the loop.
