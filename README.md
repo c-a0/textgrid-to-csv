@@ -13,7 +13,7 @@ The following are explanations of each column of the spreadsheet:
 
 Syllable: The syllable text
 
-Metric Absolute: How many beats into the song the syllable is
+Metric Absolute: The starting time for the syllable's metric interval
 
 Micro Absolute: The starting time for the syllable's microtiming interval
 
