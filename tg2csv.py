@@ -1,6 +1,6 @@
 #Script to convert TextGrid data to .csv format, which can be opened in any spreadsheet program.
 #C.A. 2021
-#Last updated 7/20/21
+#Last updated 7/26/21
 #   Use:
 #       Put the script in the folder where your TextGrids are, navigate to that folder, and run:
 #         python tg2csv.py
@@ -64,79 +64,84 @@ def main(filename): #Called from "__main__" at the very bottom.
 
 
     ### Routine for outputting the TextGrid data to csv format ###
+    metricCounter = 0
+    mmC = 0
+    measureCounter = 0
+    curZone = ""
+    zoneCounter = 0
+    i = 0
+    output = "" #One big string that we are going to put all text into, then write it to a file at the end.
+    for inter in tiers[7]: #Loop through each interval in Tier 6 (e.g. tiers[7]).
+        microText = "," 
+        beatStrength = "4," #Default value
+        if(inter.text != ""): #Each interval should be a syllable. If there's no text in it, we can just skip it.
+            output += '\n'
+            
+            #Syllable: The syllable text
+            output += inter.text+","
+            
+            #Metric Absolute: The starting time for the syllable's metric interval
+            for absolute in tiers[6]: #Tier 5 (e.g. tiers[6]) is the one with the unmodified metric data. We need to use that to get a count of which (absolute) beat we're on.
+                if inter.xmin == absolute.xmin: #We look through every interval in Tier 5 until we find one that has the same xmin as our current syllable.
+                    metricCounter = absolute.xmin #Set metricCounter to the xmin of the Tier 5 interval that corresponds to our current syllable. metricCounter is the number that will be printed to the "Metric Absolute" column in our spreadsheet.
+                    mmC = absolute.number-1
+                    for measure in tiers[4]: #While we're at it, we should also calculate which measure we're on. This will be used for the "Metric Measure" column of the spreadsheet.
+                        if absolute.xmin < measure.xmax: #Same as above, but this time comparing Tier 5 to Tier 3, to find which measure our current syllable is in.
+                            measureCounter = measure.number-1 #Because of the xxx at the start of the TextGrid, the "first" measure actually shows up as measure 2, the second shows up as 3, etc. So we need to subtract one so it makes sense.
+                            break #Once we find what we're looking for, we can stop the loop.
+                    break
+            output += str(metricCounter)+","
+            
+            x = 0
+            #Micro Absolute: The starting time for the syllable's microtiming interval
+            while(x < len(tiers[8])): #Look through the whole microtiming tier to find the microtiming interval that matches the metric interval.
+                if(inter.xmin >= tiers[8][x].xmin and inter.xmin <= tiers[8][x].xmax and inter.text == tiers[8][x].text): #If metric interval's xmin falls BETWEEN any microtiming interval's xmin and xmax, AND the text for both intervals matches, use that microtiming interval.
+                    microText = str(tiers[8][x].xmin)+","
+                elif(inter.xmax >= tiers[8][x].xmin and inter.xmax <= tiers[8][x].xmax and inter.text == tiers[8][x].text): #If none of the intervals match the above criteria, try it with the metric interval's xmax instead of its xmin.
+                    microText = str(tiers[8][x].xmin)+","
+                elif(inter.xmin <= tiers[8][x].xmin and inter.xmax >= tiers[8][x].xmax and inter.text == tiers[8][x].text): #If that doesn't work, check microtiming intervals that start AFTER the metric interval.
+                    microText = str(tiers[8][x].xmin)+","
+                elif(inter.xmin >= tiers[8][x-1].xmax and inter.text == tiers[8][x-1].text): #If all of the above fail, check the previous interval.
+                    microText = str(tiers[8][x-1].xmin)+","
+                x += 1
+            output += microText
+            
+            #Metric Measure: Formatted as X.Y, where X is which measure of the song the syllable is in, Y is which beat of that measure the syllable is on
+            if(mmC%4 == 0): #We % (modulo) the current syllable's metric number by 4, to figure out which of the four beats it lands on. 1, 2, and 3 will show up correctly, but 4 shows up as 0, so we need to create a special exception for that.
+                output += str(measureCounter)+"."+str(4)+"," #Change any 0s to 4s.
+            else:
+                output += str(measureCounter)+"."+str(mmC%4)+","
+            
+            #Beat Strength: Out of tiers 1, 2, 3, and 4, which is the lowest number tier that the current metric interval lines up with?
+            for beat in tiers[4]: #Check tier 3
+                if(beat.xmin == inter.xmin):
+                    beatStrength = "3,"
+            for beat in tiers[3]: #Check tier 2
+                if(beat.xmin == inter.xmin):
+                    beatStrength = "2,"
+            for beat in tiers[2]: #Check tier 1
+                if(beat.xmin == inter.xmin):
+                    beatStrength = "1,"
+            output += beatStrength
+            
+            #Accent: Does the syllable have a strong accent (X), a weak accent (x), or no accent (not marked)?
+            output += tiers[9][i].text+","
+            
+            #Zone: Which zone the syllable is in
+            for zone in tiers[10]: #Loop through Tier 9 intervals
+                if inter.xmin < zone.xmax: #Check if the xmin of the current syllable is less than the xmax of a Zone in Tier 9
+                    curZone = zone.text #If the xmin of the current syllable falls within a zone, make curZone that zone's text, then end the loop.
+                    break
+            output += curZone
+            
+        i += 1
+    #Output to file
     createNew = open(filename+".csv", "a") #Create a [filename].csv file, just in case it doesn't exist already.
     createNew.close()
     with open(filename+".csv", 'r+') as f2: 
         f2.truncate()
         f2.write("Syllable,Metric Absolute,Micro Absolute,Metric Measure,Beat Strength,Accent,Zone")
-        i = 0
-        metricCounter = 0
-        measureCounter = 0
-        curZone = ""
-        zoneCounter = 0
-        for inter in tiers[7]: #Loop through each interval in Tier 6 (e.g. tiers[7]).
-            microText = "," 
-            beatStrength = "4," #Default value
-            if(inter.text != ""): #Each interval should be a syllable. If there's no text in it, we can just skip it.
-                f2.write('\n')
-                
-                #Syllable: The syllable text
-                f2.write(inter.text+",")
-                
-                #Metric Absolute: How many beats into the song the syllable is
-                for absolute in tiers[6]: #Tier 5 (e.g. tiers[6]) is the one with the unmodified metric data. We need to use that to get a count of which (absolute) beat we're on.
-                    if inter.xmin == absolute.xmin: #We look through every interval in Tier 5 until we find one that has the same xmin as our current syllable.
-                        metricCounter = absolute.number-1 #Set metricCounter to the interval number of the Tier 5 interval that corresponds to our current syllable. metricCounter is the number that will be printed to the "Metric Absolute" column in our spreadsheet.
-                        for measure in tiers[4]: #While we're at it, we should also calculate which measure we're on. This will be used for the "Metric Measure" column of the spreadsheet.
-                            if absolute.xmin < measure.xmax: #Same as above, but this time comparing Tier 5 to Tier 3, to find which measure our current syllable is in.
-                                measureCounter = measure.number-1 #Because of the xxx at the start of the TextGrid, the "first" measure actually shows up as measure 2, the second shows up as 3, etc. So we need to subtract one so it makes sense.
-                                break #Once we find what we're looking for, we can stop the loop.
-                        break
-                f2.write(str(metricCounter)+",") 
-                
-                x = 0
-                #Micro Absolute: The starting time for the syllable's microtiming interval
-                while(x < len(tiers[8])): #Look through the whole microtiming tier to find the microtiming interval that matches the metric interval.
-                    if(inter.xmin >= tiers[8][x].xmin and inter.xmin <= tiers[8][x].xmax and inter.text == tiers[8][x].text): #If metric interval's xmin falls BETWEEN any microtiming interval's xmin and xmax, AND the text for both intervals matches, use that microtiming interval.
-                        microText = str(tiers[8][x].xmin)+","
-                    elif(inter.xmax >= tiers[8][x].xmin and inter.xmax <= tiers[8][x].xmax and inter.text == tiers[8][x].text): #If none of the intervals match the above criteria, try it with the metric interval's xmax instead of its xmin.
-                        microText = str(tiers[8][x].xmin)+","
-                    elif(inter.xmin <= tiers[8][x].xmin and inter.xmax >= tiers[8][x].xmax and inter.text == tiers[8][x].text): #If that doesn't work, check microtiming intervals that start AFTER the metric interval.
-                        microText = str(tiers[8][x].xmin)+","
-                    elif(inter.xmin >= tiers[8][x-1].xmax and inter.text == tiers[8][x-1].text): #If all of the above fail, check the previous interval.
-                        microText = str(tiers[8][x-1].xmin)+","
-                    x += 1
-                f2.write(microText)
-                
-                #Metric Measure: Formatted as X.Y, where X is which measure of the song the syllable is in, Y is which beat of that measure the syllable is on
-                if(metricCounter%4 == 0): #We % (modulo) the current syllable's metric number by 4, to figure out which of the four beats it lands on. 1, 2, and 3 will show up correctly, but 4 shows up as 0, so we need to create a special exception for that.
-                    f2.write(str(measureCounter)+"."+str(4)+",") #Change any 0s to 4s.
-                else:
-                    f2.write(str(measureCounter)+"."+str(metricCounter%4)+",")
-                
-                #Beat Strength: Out of tiers 1, 2, 3, and 4, which is the lowest number tier that the current metric interval lines up with?
-                for beat in tiers[4]: #Check tier 3
-                    if(beat.xmin == inter.xmin):
-                        beatStrength = "3,"
-                for beat in tiers[3]: #Check tier 2
-                    if(beat.xmin == inter.xmin):
-                        beatStrength = "2,"
-                for beat in tiers[2]: #Check tier 1
-                    if(beat.xmin == inter.xmin):
-                        beatStrength = "1,"
-                f2.write(beatStrength)
-                
-                #Accent: Does the syllable have a strong accent (X), a weak accent (x), or no accent (not marked)?
-                f2.write(tiers[9][i].text+",") 
-                
-                #Zone: Which zone the syllable is in
-                for zone in tiers[10]: #Loop through Tier 9 intervals
-                    if inter.xmin < zone.xmax: #Check if the xmin of the current syllable is less than the xmax of a Zone in Tier 9
-                        curZone = zone.text #If the xmin of the current syllable falls within a zone, make curZone that zone's text, then end the loop.
-                        break
-                f2.write(curZone)
-                
-            i += 1
+        f2.write(output)
     f2.close()
 
 
