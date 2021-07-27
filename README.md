@@ -17,6 +17,10 @@ Metric Absolute: The starting time for the syllable's metric interval
 
 Micro Absolute: The starting time for the syllable's microtiming interval
 
+Metric Length: The length (in beats) of the metric interval
+
+Micro Length: The length (in seconds) of the microtiming interval
+
 Metric Measure: Formatted as X.Y, where X is which measure of the song the syllable is in, Y is which beat of that measure the syllable is on
 
 Beat Strength: Out of tiers 1, 2, 3, and 4, which is the lowest number tier that the current metric interval lines up with?
