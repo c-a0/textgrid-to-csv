@@ -1,6 +1,6 @@
 #Script to convert TextGrid data to .csv format, which can be opened in any spreadsheet program.
 #C.A. 2021
-#Last updated 7/26/21
+#Last updated 7/27/21
 #   Use:
 #       Put the script in the folder where your TextGrids are, navigate to that folder, and run:
 #         python tg2csv.py
@@ -64,7 +64,7 @@ def main(filename): #Called from "__main__" at the very bottom.
 
 
     ### Routine for outputting the TextGrid data to csv format ###
-    metricCounter = 0
+    metricCounter = 0 #Setting up variables
     mmC = 0
     measureCounter = 0
     curZone = ""
@@ -72,7 +72,7 @@ def main(filename): #Called from "__main__" at the very bottom.
     i = 0
     output = "" #One big string that we are going to put all text into, then write it to a file at the end.
     for inter in tiers[7]: #Loop through each interval in Tier 6 (e.g. tiers[7]).
-        microText = "," 
+        microText = interval(0,0,0,"") #Default values
         beatStrength = "4," #Default value
         if(inter.text != ""): #Each interval should be a syllable. If there's no text in it, we can just skip it.
             output += '\n'
@@ -96,15 +96,22 @@ def main(filename): #Called from "__main__" at the very bottom.
             #Micro Absolute: The starting time for the syllable's microtiming interval
             while(x < len(tiers[8])): #Look through the whole microtiming tier to find the microtiming interval that matches the metric interval.
                 if(inter.xmin >= tiers[8][x].xmin and inter.xmin <= tiers[8][x].xmax and inter.text == tiers[8][x].text): #If metric interval's xmin falls BETWEEN any microtiming interval's xmin and xmax, AND the text for both intervals matches, use that microtiming interval.
-                    microText = str(tiers[8][x].xmin)+","
+                    microText = tiers[8][x]
                 elif(inter.xmax >= tiers[8][x].xmin and inter.xmax <= tiers[8][x].xmax and inter.text == tiers[8][x].text): #If none of the intervals match the above criteria, try it with the metric interval's xmax instead of its xmin.
-                    microText = str(tiers[8][x].xmin)+","
+                    microText = tiers[8][x]
                 elif(inter.xmin <= tiers[8][x].xmin and inter.xmax >= tiers[8][x].xmax and inter.text == tiers[8][x].text): #If that doesn't work, check microtiming intervals that start AFTER the metric interval.
-                    microText = str(tiers[8][x].xmin)+","
+                    microText = tiers[8][x]
                 elif(inter.xmin >= tiers[8][x-1].xmax and inter.text == tiers[8][x-1].text): #If all of the above fail, check the previous interval.
-                    microText = str(tiers[8][x-1].xmin)+","
+                    microText = tiers[8][x-1]
                 x += 1
-            output += microText
+            output += str(microText.xmin)+","
+            
+            #Metric Length: The length (in beats) of the metric interval
+            output += str(int(round(inter.length/tiers[6][10].length))) + "," #Get the length of a single metric interval from tier 5 (tiers[6][10].length). I used 10 because it's far enough into the song where it won't be blank because of the xxx. It's not a good way to do it but it should work.
+            
+            #Micro Length: The length (in seconds) of the microtiming interval
+            output += str(microText.length)+","
+            
             
             #Metric Measure: Formatted as X.Y, where X is which measure of the song the syllable is in, Y is which beat of that measure the syllable is on
             if(mmC%4 == 0): #We % (modulo) the current syllable's metric number by 4, to figure out which of the four beats it lands on. 1, 2, and 3 will show up correctly, but 4 shows up as 0, so we need to create a special exception for that.
@@ -140,7 +147,7 @@ def main(filename): #Called from "__main__" at the very bottom.
     createNew.close()
     with open(filename+".csv", 'r+') as f2: 
         f2.truncate()
-        f2.write("Syllable,Metric Absolute,Micro Absolute,Metric Measure,Beat Strength,Accent,Zone")
+        f2.write("Syllable,Metric Absolute,Micro Absolute,Metric Length,Micro Length,Metric Measure,Beat Strength,Accent,Zone")
         f2.write(output)
     f2.close()
 
