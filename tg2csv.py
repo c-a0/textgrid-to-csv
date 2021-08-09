@@ -1,6 +1,6 @@
 #Script to convert TextGrid data to .csv format, which can be opened in any spreadsheet program.
 #C.A. 2021
-#Last updated 7/27/21
+#Last updated 8/9/21
 #   Use:
 #       Put the script in the folder where your TextGrids are, navigate to that folder, and run:
 #         python tg2csv.py
@@ -85,7 +85,7 @@ def main(filename): #Called from "__main__" at the very bottom.
                 if inter.xmin == absolute.xmin: #We look through every interval in Tier 5 until we find one that has the same xmin as our current syllable.
                     metricCounter = absolute.xmin #Set metricCounter to the xmin of the Tier 5 interval that corresponds to our current syllable. metricCounter is the number that will be printed to the "Metric Absolute" column in our spreadsheet.
                     mmC = absolute.number-1
-                    for measure in tiers[4]: #While we're at it, we should also calculate which measure we're on. This will be used for the "Metric Measure" column of the spreadsheet.
+                    for measure in tiers[2]: #While we're at it, we should also calculate which measure we're on. This will be used for the "Metric Measure" column of the spreadsheet.
                         if absolute.xmin < measure.xmax: #Same as above, but this time comparing Tier 5 to Tier 3, to find which measure our current syllable is in.
                             measureCounter = measure.number-1 #Because of the xxx at the start of the TextGrid, the "first" measure actually shows up as measure 2, the second shows up as 3, etc. So we need to subtract one so it makes sense.
                             break #Once we find what we're looking for, we can stop the loop.
@@ -114,10 +114,10 @@ def main(filename): #Called from "__main__" at the very bottom.
             
             
             #Metric Measure: Formatted as X.Y, where X is which measure of the song the syllable is in, Y is which beat of that measure the syllable is on
-            if(mmC%4 == 0): #We % (modulo) the current syllable's metric number by 4, to figure out which of the four beats it lands on. 1, 2, and 3 will show up correctly, but 4 shows up as 0, so we need to create a special exception for that.
-                output += str(measureCounter)+"."+str(4)+"," #Change any 0s to 4s.
+            if(mmC%16 == 0): #We % (modulo) the current syllable's metric number by 4, to figure out which of the four beats it lands on. 1, 2, and 3 will show up correctly, but 4 shows up as 0, so we need to create a special exception for that.
+                output += str(measureCounter)+"."+str(16)+"," #Change any 0s to 4s.
             else:
-                output += str(measureCounter)+"."+str(mmC%4)+","
+                output += str(measureCounter)+"."+str(mmC%16)+","
             
             #Beat Strength: Out of tiers 1, 2, 3, and 4, which is the lowest number tier that the current metric interval lines up with?
             for beat in tiers[4]: #Check tier 3
