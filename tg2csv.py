@@ -1,6 +1,6 @@
 #Script to convert TextGrid data to .csv format, which can be opened in any spreadsheet program.
 #C.A. 2021
-#Last updated 8/9/21
+#Last updated 8/23/21
 #   Use:
 #       Put the script in the folder where your TextGrids are, navigate to that folder, and run:
 #         python tg2csv.py
@@ -61,8 +61,18 @@ def main(filename): #Called from "__main__" at the very bottom.
 
         i += 1
         
-
-
+    #Variables for Tier is which number, so we can change these if the TextGrids are different.
+    #Tier 1 is tiers[2], Tier 2 is tiers[3], etc.
+    tierMeasure = 1+1
+    tierHalf = 2+1
+    tierFourth = 3+1
+    tierEighth = 4+1
+    tierSixteenth = 5+1
+    tierMetric = 6+1
+    tierMicro = 7+1
+    tierAccent = 8+1
+    tierZone = 9+1
+    
     ### Routine for outputting the TextGrid data to csv format ###
     metricCounter = 0 #Setting up variables
     mmC = 0
@@ -71,7 +81,7 @@ def main(filename): #Called from "__main__" at the very bottom.
     zoneCounter = 0
     i = 0
     output = "" #One big string that we are going to put all text into, then write it to a file at the end.
-    for inter in tiers[7]: #Loop through each interval in Tier 6 (e.g. tiers[7]).
+    for inter in tiers[tierMetric]: #Loop through each interval in Tier 6 (e.g. tiers[7]).
         microText = interval(0,0,0,"") #Default values
         beatStrength = "4," #Default value
         if(inter.text != ""): #Each interval should be a syllable. If there's no text in it, we can just skip it.
@@ -81,11 +91,11 @@ def main(filename): #Called from "__main__" at the very bottom.
             output += inter.text+","
             
             #Metric Absolute: The starting time for the syllable's metric interval
-            for absolute in tiers[6]: #Tier 5 (e.g. tiers[6]) is the one with the unmodified metric data. We need to use that to get a count of which (absolute) beat we're on.
+            for absolute in tiers[tierSixteenth]: #Tier 5 (e.g. tiers[6]) is the one with the unmodified metric data. We need to use that to get a count of which (absolute) beat we're on.
                 if inter.xmin == absolute.xmin: #We look through every interval in Tier 5 until we find one that has the same xmin as our current syllable.
                     metricCounter = absolute.xmin #Set metricCounter to the xmin of the Tier 5 interval that corresponds to our current syllable. metricCounter is the number that will be printed to the "Metric Absolute" column in our spreadsheet.
                     mmC = absolute.number-1
-                    for measure in tiers[2]: #While we're at it, we should also calculate which measure we're on. This will be used for the "Metric Measure" column of the spreadsheet.
+                    for measure in tiers[tierMeasure]: #While we're at it, we should also calculate which measure we're on. This will be used for the "Metric Measure" column of the spreadsheet.
                         if absolute.xmin < measure.xmax: #Same as above, but this time comparing Tier 5 to Tier 3, to find which measure our current syllable is in.
                             measureCounter = measure.number-1 #Because of the xxx at the start of the TextGrid, the "first" measure actually shows up as measure 2, the second shows up as 3, etc. So we need to subtract one so it makes sense.
                             break #Once we find what we're looking for, we can stop the loop.
@@ -94,20 +104,20 @@ def main(filename): #Called from "__main__" at the very bottom.
             
             x = 0
             #Micro Absolute: The starting time for the syllable's microtiming interval
-            while(x < len(tiers[8])): #Look through the whole microtiming tier to find the microtiming interval that matches the metric interval.
-                if(inter.xmin >= tiers[8][x].xmin and inter.xmin <= tiers[8][x].xmax and inter.text == tiers[8][x].text): #If metric interval's xmin falls BETWEEN any microtiming interval's xmin and xmax, AND the text for both intervals matches, use that microtiming interval.
-                    microText = tiers[8][x]
-                elif(inter.xmax >= tiers[8][x].xmin and inter.xmax <= tiers[8][x].xmax and inter.text == tiers[8][x].text): #If none of the intervals match the above criteria, try it with the metric interval's xmax instead of its xmin.
-                    microText = tiers[8][x]
-                elif(inter.xmin <= tiers[8][x].xmin and inter.xmax >= tiers[8][x].xmax and inter.text == tiers[8][x].text): #If that doesn't work, check microtiming intervals that start AFTER the metric interval.
-                    microText = tiers[8][x]
-                elif(inter.xmin >= tiers[8][x-1].xmax and inter.text == tiers[8][x-1].text): #If all of the above fail, check the previous interval.
-                    microText = tiers[8][x-1]
+            while(x < len(tiers[tierMicro])): #Look through the whole microtiming tier to find the microtiming interval that matches the metric interval.
+                if(inter.xmin >= tiers[tierMicro][x].xmin and inter.xmin <= tiers[tierMicro][x].xmax and inter.text == tiers[tierMicro][x].text): #If metric interval's xmin falls BETWEEN any microtiming interval's xmin and xmax, AND the text for both intervals matches, use that microtiming interval.
+                    microText = tiers[tierMicro][x]
+                elif(inter.xmax >= tiers[tierMicro][x].xmin and inter.xmax <= tiers[tierMicro][x].xmax and inter.text == tiers[tierMicro][x].text): #If none of the intervals match the above criteria, try it with the metric interval's xmax instead of its xmin.
+                    microText = tiers[tierMicro][x]
+                elif(inter.xmin <= tiers[tierMicro][x].xmin and inter.xmax >= tiers[tierMicro][x].xmax and inter.text == tiers[tierMicro][x].text): #If that doesn't work, check microtiming intervals that start AFTER the metric interval.
+                    microText = tiers[tierMicro][x]
+                elif(inter.xmin >= tiers[tierMicro][x-1].xmax and inter.text == tiers[tierMicro][x-1].text): #If all of the above fail, check the previous interval.
+                    microText = tiers[tierMicro][x-1]
                 x += 1
             output += str(microText.xmin)+","
             
             #Metric Length: The length (in beats) of the metric interval
-            output += str(int(round(inter.length/tiers[6][10].length))) + "," #Get the length of a single metric interval from tier 5 (tiers[6][10].length). I used 10 because it's far enough into the song where it won't be blank because of the xxx. It's not a good way to do it but it should work.
+            output += str(int(round(inter.length/tiers[tierMetric][10].length))) + "," #Get the length of a single metric interval from tier 5 (tiers[6][10].length). I used 10 because it's far enough into the song where it won't be blank because of the xxx. It's not a good way to do it but it should work.
             
             #Micro Length: The length (in seconds) of the microtiming interval
             output += str(microText.length)+","
@@ -120,22 +130,31 @@ def main(filename): #Called from "__main__" at the very bottom.
                 output += str(measureCounter)+"."+str(mmC%16)+","
             
             #Beat Strength: Out of tiers 1, 2, 3, and 4, which is the lowest number tier that the current metric interval lines up with?
-            for beat in tiers[4]: #Check tier 3
+            for beat in tiers[tierFourth]: #Check tier 3
                 if(beat.xmin == inter.xmin):
                     beatStrength = "3,"
-            for beat in tiers[3]: #Check tier 2
+            for beat in tiers[tierHalf]: #Check tier 2
                 if(beat.xmin == inter.xmin):
                     beatStrength = "2,"
-            for beat in tiers[2]: #Check tier 1
+            for beat in tiers[tierMeasure]: #Check tier 1
                 if(beat.xmin == inter.xmin):
                     beatStrength = "1,"
             output += beatStrength
             
             #Accent: Does the syllable have a strong accent (X), a weak accent (x), or no accent (not marked)?
-            output += tiers[9][i].text+","
+            try:
+                if(tiers[tierAccent][i].text == "1"):
+                    output += "x,"
+                elif(tiers[tierAccent][i].text == "0" or tiers[tierAccent][i].text == "2" or tiers[tierAccent][i].text == "3"):
+                    output += ","
+                else:
+                    output += tiers[tierAccent][i].text+","
+            except IndexError:
+                    output += ","
+            
             
             #Zone: Which zone the syllable is in
-            for zone in tiers[10]: #Loop through Tier 9 intervals
+            for zone in tiers[tierZone]: #Loop through Tier 9 intervals
                 if inter.xmin < zone.xmax: #Check if the xmin of the current syllable is less than the xmax of a Zone in Tier 9
                     curZone = zone.text #If the xmin of the current syllable falls within a zone, make curZone that zone's text, then end the loop.
                     break
